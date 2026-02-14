@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{title}}</title>
+
+  <style>
+    body {
+      background: #000000;
+      color: #00ff04;
+      font-family: 'Times New Roman', Times, serif;
+      text-align: center;
+      margin-top: 80px;
+      font: 1em serif;
+    }
+
+    input, button {
+      font-size: 18px;
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+    }
+
+    input {
+      background: #000;
+      color: #00ff04;
+      border: 1px solid #00ff04;
+      width: 220px;
+    }
+
+    button {
+      background: #000;
+      color: #00ff04;
+      border: 1px solid #00ff04;
+      cursor: grab;
+    }
+
+    #bar-container {
+      width: 220px;
+      height: 8px;
+      border: 1px solid #00ff04;
+      margin: 8px auto 4px auto;
+      background: #000;
+    }
+
+    #bar {
+      height: 100%;
+      width: 0%;
+      background: #ff3b3b;
+      transition: width 0.3s ease, background 0.3s ease;
+    }
+
+    #strength-text {
+      font-size: 14px;
+      height: 18px;
+    }
+  </style>
+
+  <link rel="icon" type="image/x-icon" href="/fav.ico?dev={{ 1270.00 }}">
+</head>
+
+<body>
+  <h1>{{text}}</h1>
+
+  <form method="post" action="/auth/done">
+    <input name="user" placeholder="Username">
+    <br><br>
+
+    <input type="password" id="pass" name="pass" placeholder="Password">
+
+    <div id="bar-container">
+      <div id="bar"></div>
+    </div>
+
+    <span id="strength-text"></span>
+
+    <br><br>
+    <button>Done</button>
+  </form>
+
+  <script>
+    const passInput = document.getElementById("pass");
+    const strengthText = document.getElementById("strength-text");
+    const bar = document.getElementById("bar");
+
+    function calculateEntropy(password) {
+      let pool = 0;
+
+      if (/[a-z]/.test(password)) pool += 26;
+      if (/[A-Z]/.test(password)) pool += 26;
+      if (/[0-9]/.test(password)) pool += 10;
+      if (/[^a-zA-Z0-9]/.test(password)) pool += 32;
+
+      if (pool === 0) return 0;
+
+      return password.length * Math.log2(pool);
+    }
+
+    passInput.addEventListener("input", () => {
+      const val = passInput.value;
+      const entropy = calculateEntropy(val);
+
+      if (val.length === 0) {
+        strengthText.textContent = "";
+        bar.style.width = "0%";
+        return;
+      }
+
+      let label, color, width;
+
+      if (entropy < 28) {
+        label = "Weak";
+        color = "#ff3b3b";
+        width = "25%";
+      } else if (entropy < 60) {
+        label = "Medium";
+        color = "#ffd500";
+        width = "60%";
+      } else {
+        label = "Strong";
+        color = "#00ff04";
+        width = "100%";
+      }
+
+      strengthText.textContent = `${label} (${Math.round(entropy)} bits)`;
+      strengthText.style.color = color;
+      bar.style.width = width;
+      bar.style.background = color;
+    });
+  </script>
+</body>
+</html>
