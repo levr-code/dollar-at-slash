@@ -3,6 +3,7 @@ import eventlet
 eventlet.monkey_patch()
 from decimal import Decimal
 import sys
+import socket
 import os
 import copy
 import secrets
@@ -117,12 +118,12 @@ def convert_to_type(text):
             return Value("int", 0)
     elif prefix == "jsn":
         return Value("jsn", json.loads(val))
-    elif prefix == "flt":  # Убираем возможность 何 через flt
+    elif prefix == "flt":
         try:
             return Value("flt", float(val))
         except ValueError:
             return Value("flt", 0.0)
-    elif prefix == "dec":  # Убираем возможность 何 через flt
+    elif prefix == "dec":
         try:
             return Value("dec", Decimal(val))
         except ValueError:
@@ -131,6 +132,16 @@ def convert_to_type(text):
         return Value("str", val)
     elif prefix == "bit":
         return Value("bit", val.lower() in ("1", "true", "yes", "ok", "well"))
+    elif prefix == "oct":
+        try:
+            return Value("int", int(val, 8))
+        except ValueError:
+            return Value("int", 0)
+    elif prefix == "hex":
+        try:
+            return Value("int", int(val, 16))
+        except ValueError:
+            return Value("int", 0)
     elif prefix == "nth":
         if val.lower() in ("none", "null", "nothing"):
             return Value("nth", None)
@@ -153,7 +164,7 @@ def ttype(text):
     if isinstance(text, Value):
         return text.type + str(text.value)
     try:
-        vt = text[:3] not in ["str", "int", "flt", "jsn", "dec", "bit"]
+        vt = text[:3] not in ["str", "int", "flt", "jsn", "dec", "bit","oct","hex"]
     except (IndexError, TypeError):
         vt = False
     if vt:
@@ -518,15 +529,15 @@ class Code:
             elif self.value == "/sys.theme" and la == 1:
                 emit("settheme", self.args[0])
                 sandboxes[sid()].theme = self.args[0]
-            elif self.value == "mem.malloc":  # for no confusion returns a "memointer"
+            elif self.value == "/mem.malloc":  # for no confusion returns a "memointer"
                 self.__addtochat(sandboxes[sid()].malloc(self.args[0]))
-            elif self.value == "mem.free":  # frees a memointer
+            elif self.value == "/mem.free":  # frees a memointer
                 addr = self.args[0]
                 sandboxes[sid()].free(addr)
-            elif self.value == "mem.read":  # reads from memointer
+            elif self.value == "/mem.read":  # reads from memointer
                 val = sandboxes[sid()].heap_read(self.args[0], self.args[1])
                 self.__addtochat(val)
-            elif self.value == "mem.write":
+            elif self.value == "/mem.write":
                 sandboxes[sid()].heap_write(self.args[0], self.args[1], self.args[2])
             elif self.value == "/global.set" and la == 2:
                 global_vars.setdefault(self.args[0])
@@ -1021,7 +1032,22 @@ class Block:
 #                      NOT INTERPRETER                     #
 ############################################################
 
-
+def get_preferred_ip():
+    for method in [
+        lambda: socket.gethostbyname(socket.gethostname()),
+        lambda: [
+            (s.connect(('8.8.8.8', 80)), s.getsockname()[0], s.close())
+            for s in [socket.socket(socket.AF_INET, socket.SOCK_DGRAM)]
+        ][0][1],
+        lambda: '127.0.0.1'
+    ]:
+        try:
+            ip = method()
+            if ip and ip != '127.0.0.1':
+                return ip
+        except:
+            pass
+    return '127.0.0.1'
 def setup_rotes():
     """Setups all needed flask."""
 
@@ -1196,7 +1222,7 @@ if __name__ == "__main__":
         else:
             print(f"Ошибка: Файл {file_path} не найден.")
     else:
-        print("Аргументы не найдены. Запуск веб-интерфейса...")
+        print(f"Arguments not found. starting web interface on ipv4 http://{get_preferred_ip()}")
         setup_rotes()
         from flask_socketio import emit
 
