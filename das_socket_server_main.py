@@ -118,6 +118,10 @@ def convert_to_type(text):
             return Value("int", 0)
     elif prefix == "jsn":
         return Value("jsn", json.loads(val))
+    elif prefix == "tup":
+        if val[0]+val[-1]!="()":
+            Value("tup", tuple(json.loads("["+val+"]")))
+        return Value("tup", tuple(json.loads("["+val[1:-1]+"]")))
     elif prefix == "flt":
         try:
             return Value("flt", float(val))
@@ -164,7 +168,7 @@ def ttype(text):
     if isinstance(text, Value):
         return text.type + str(text.value)
     try:
-        vt = text[:3] not in ["str", "int", "flt", "jsn", "dec", "bit","oct","hex"]
+        vt = text[:3] not in ["str", "int", "flt", "jsn", "dec", "bit", "oct", "hex", "tup"]
     except (IndexError, TypeError):
         vt = False
     if vt:
@@ -173,6 +177,8 @@ def ttype(text):
         return "int" + str(text)
     elif t is float:
         return "flt" + str(text)
+    elif t is tuple:
+        return "tup" + str(text)
     elif t is bool:
         return "bit" + ("1" if text else "0")
     elif t is Decimal:
