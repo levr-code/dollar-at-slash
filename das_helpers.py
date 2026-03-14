@@ -626,7 +626,7 @@ def eval_expr(expr: str):
             op = ops.pop()
             if (
                 isinstance(b, (int, float))
-                and isinstance(b, (int, float))
+                and isinstance(a, (int, float))
                 and isinstance(op, str)
             ):
                 if op == "+":
